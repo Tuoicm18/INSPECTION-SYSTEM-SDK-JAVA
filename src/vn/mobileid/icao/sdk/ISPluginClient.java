@@ -110,7 +110,7 @@ public final class ISPluginClient {
     //<editor-fold defaultstate="collapsed" desc="INTERFACE">
     interface DetailsListener {
 
-        void onError(Throwable error);
+        void onError(Exception error);
     }
 
     public interface DeviceDetailsListener extends DetailsListener {
@@ -621,7 +621,7 @@ public final class ISPluginClient {
                     }
 
                     @Override
-                    public void onError(Throwable error) {
+                    public void onError(Exception error) {
 
                     }
                 })

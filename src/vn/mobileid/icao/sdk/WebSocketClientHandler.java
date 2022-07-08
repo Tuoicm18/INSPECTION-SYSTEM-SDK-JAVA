@@ -203,7 +203,7 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                         throw new ISPluginException("CmdType not match expect [" + sync.getCmdType() + "] but get [" + resp.getCmdType() + "]");
                     }
                     if (resp.getErrorCode() != Utils.SUCCESS) {
-                        throw new ISPluginException(resp.getErrorMessage());
+                        throw new ISPluginException(resp.getErrorCode(), resp.getErrorMessage());
                     }
                     CmdType cmd = resp.getCmdType();
                     switch (cmd) {

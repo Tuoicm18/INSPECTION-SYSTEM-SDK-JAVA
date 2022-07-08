@@ -5,14 +5,27 @@
  */
 package vn.mobileid.icao.sdk.util;
 
+import lombok.Setter;
+import lombok.Getter;
 /**
  *
  * @author TRUONGNNT
  */
+@Getter
+@Setter
 public class ISPluginException extends Exception {
-
+    private int errCode;
+    private String errMsg;
+    
+    public ISPluginException(int errCode, String errMsgInput) {
+        super(errMsgInput);
+        this.errCode = errCode;
+        this.errMsg = errMsgInput;
+    }
+    
     public ISPluginException(String string) {
         super(string);
+        this.errMsg = string;
     }
 
     public ISPluginException(Throwable ex) {
