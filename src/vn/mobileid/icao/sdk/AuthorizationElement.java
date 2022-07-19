@@ -16,12 +16,14 @@ import lombok.Getter;
 @Builder
 @Getter
 public class AuthorizationElement {
-
+    private AuthElementType type;
+    private int ordinary;
+    private String label;
     private String title;
     private String text;
-    private Map<String, Boolean> multipleSelect;
-    private Map<String, Boolean> singleSelect;
     
+    private Map<String, Boolean> multipleSelect;
+    private Map<String, Boolean> singleSelect;   
     private Map<String, String> nameValuePair;
     
 }

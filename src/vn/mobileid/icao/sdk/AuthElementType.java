@@ -5,18 +5,13 @@
  */
 package vn.mobileid.icao.sdk;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-
 /**
  *
  * @author acer
  */
-@Builder
-@Getter
-@Setter
-public class RequireScanDocument {
-    private ScanType scanType;
-    private boolean saveEnabled;
+public enum AuthElementType {
+    Content,
+    Multiple,
+    Single,
+    NVP
 }

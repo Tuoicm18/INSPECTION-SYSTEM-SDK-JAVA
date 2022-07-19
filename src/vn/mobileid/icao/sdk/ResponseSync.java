@@ -31,7 +31,7 @@ public class ResponseSync<T> {
     private ISPluginClient.DocumentDetailsListener documentDetailsListener;
     private ISPluginClient.BiometricAuthListener biometricAuthListener;
     private ISPluginClient.DisplayInformationListener displayInformationListener;
-    private ISPluginClient.ConnectDeviceListener connectDeviceListener;
+    private ISPluginClient.ConnectToDeviceListener connectToDeviceListener;
     private ISPluginClient.ScanDocumentListener scanDocumentListener;
     //</editor-fold>
 

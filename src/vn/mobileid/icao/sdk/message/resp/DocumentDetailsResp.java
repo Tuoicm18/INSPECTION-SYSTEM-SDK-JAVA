@@ -14,7 +14,7 @@ import lombok.Getter;
  */
 @Getter
 @Builder
-public class DocumentDetails {
+public class DocumentDetailsResp {
 
     private boolean paceEnabled;
     private boolean bacEnabled;

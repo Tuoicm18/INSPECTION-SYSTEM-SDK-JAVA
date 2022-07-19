@@ -15,17 +15,17 @@ import lombok.Getter;
 @Setter
 public class ISPluginException extends Exception {
     private int errCode;
-    private String errMsg;
+    //private String errMsg;
     
     public ISPluginException(int errCode, String errMsgInput) {
         super(errMsgInput);
         this.errCode = errCode;
-        this.errMsg = errMsgInput;
+        //this.errMsg = errMsgInput;
     }
     
     public ISPluginException(String string) {
         super(string);
-        this.errMsg = string;
+        //this.errMsg = string;
     }
 
     public ISPluginException(Throwable ex) {

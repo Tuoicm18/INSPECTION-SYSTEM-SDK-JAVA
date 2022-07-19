@@ -5,27 +5,19 @@
  */
 package vn.mobileid.icao.sdk;
 
-import lombok.Builder;
 import lombok.Getter;
-
+import lombok.Setter;
+import lombok.Builder;
 /**
  *
- * @author TRUONGNNT
+ * @author acer
  */
-@Builder
 @Getter
-public class ConnectProp {
-
+@Setter
+@Builder
+public class RequireConnectDevice {
     private boolean confirmEnabled;
     private String confirmCode;
     private String clientName;
     private ConfigConnect configuration;
-
-    public static class ConfigConnect {
-
-        private boolean mrzEnabled;
-        private boolean imageEnabled;
-        private boolean dataGroupEnabled;
-        private boolean optionalDetailsEnabled;
-    }
 }

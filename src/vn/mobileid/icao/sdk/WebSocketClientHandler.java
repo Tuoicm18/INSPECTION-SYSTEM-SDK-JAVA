@@ -32,12 +32,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import vn.mobileid.icao.sdk.message.resp.ResultCardDetectionEvent;
-import vn.mobileid.icao.sdk.message.resp.DeviceDetails;
-import vn.mobileid.icao.sdk.message.resp.DocumentDetails;
-import vn.mobileid.icao.sdk.message.resp.ResultBiometricAuth;
-import vn.mobileid.icao.sdk.message.resp.ResultConnectDevice;
-import vn.mobileid.icao.sdk.message.resp.ResultScanDocument;
+import vn.mobileid.icao.sdk.message.resp.CardDetectionEventResp;
+import vn.mobileid.icao.sdk.message.resp.DeviceDetailsResp;
+import vn.mobileid.icao.sdk.message.resp.DocumentDetailsResp;
+import vn.mobileid.icao.sdk.message.resp.BiometricAuthResp;
+import vn.mobileid.icao.sdk.message.resp.ConnectToDeviceResp;
+import vn.mobileid.icao.sdk.message.resp.ScanDocumentResp;
 
 /**
  *
@@ -209,7 +209,7 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                     switch (cmd) {
                         case Refresh: //Func 2.9
                         case GetDeviceDetails: // Func 2.1
-                            DeviceDetails deviceDetails = getDeviceDetails(json);
+                            DeviceDetailsResp deviceDetails = getDeviceDetails(json);
                             sync.setSuccess(deviceDetails);
                             if (sync.getDeviceDetailsListener() != null) {
                                 executorService.submit(() -> {
@@ -219,7 +219,7 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                             }
                             break;
                         case GetInfoDetails: // Func 2.2
-                            DocumentDetails docDetails = getDocumentDetails(json);
+                            DocumentDetailsResp docDetails = getDocumentDetails(json);
                             sync.setSuccess(docDetails);
                             if (sync.getDocumentDetailsListener() != null) {
                                 executorService.submit(() -> {
@@ -229,7 +229,7 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                             }
                             break;
                         case BiometricAuthentication: // Func 2.4
-                            ResultBiometricAuth biometricAuth = getResultBiometricAuth(json);
+                            BiometricAuthResp biometricAuth = getResultBiometricAuth(json);
                             sync.setSuccess(biometricAuth);
                             if (sync.getBiometricAuthListener() != null) {
                                 executorService.submit(() -> {
@@ -239,12 +239,12 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                             }
                             break;
                         case ConnectToDevice: // Func 2.5
-                            ResultConnectDevice resultConnectDevice = getConnectDevice(json);
+                            ConnectToDeviceResp resultConnectDevice = getConnectDevice(json);
                             sync.setSuccess(resultConnectDevice);
-                            if (sync.getConnectDeviceListener() != null) {
+                            if (sync.getConnectToDeviceListener()!= null) {
                                 executorService.submit(() -> {
-                                    sync.getConnectDeviceListener()
-                                            .onConnectDevice(resultConnectDevice);
+                                    sync.getConnectToDeviceListener()
+                                            .onConnectToDevice(resultConnectDevice);
                                 });
                             }
                             break;
@@ -258,7 +258,7 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                             }
                             break;
                         case ScanDocument: //Func 2.10
-                            ResultScanDocument resultScanDoc = getScanDocument(json);
+                            ScanDocumentResp resultScanDoc = getScanDocument(json);
                             sync.setSuccess(resultScanDoc);
                             if (sync.getScanDocumentListener() != null) {
                                 executorService.submit(() -> {
@@ -294,9 +294,9 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                                     .onError(ex);
                         });
                     }
-                    if (sync.getConnectDeviceListener() != null) {
+                    if (sync.getConnectToDeviceListener() != null) {
                         executorService.submit(() -> {
-                            sync.getConnectDeviceListener()
+                            sync.getConnectToDeviceListener()
                                     .onError(ex);
                         });
                     }
@@ -312,21 +312,21 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
             } else if (CmdType.SendInfoDetails == resp.getCmdType()) { // Func 2.3
                 if (this.listener != null) {
                     executorService.submit(() -> {
-                        DocumentDetails documentDetails = getDocumentDetails(json);
+                        DocumentDetailsResp documentDetails = getDocumentDetails(json);
                         listener.onReceivedDocument(documentDetails);
                     });
                 }
             } else if (CmdType.SendBiometricAuthentication == resp.getCmdType()) { // Func 2.7
                 if (this.listener != null) {
                     executorService.submit(() -> {
-                        ResultBiometricAuth resultBiometricAuth = getResultBiometricAuth(json);
+                        BiometricAuthResp resultBiometricAuth = getResultBiometricAuth(json);
                         listener.onReceivedBiometricAuth(resultBiometricAuth);
                     });
                 }
             } else if (CmdType.CardDetectionEvent == resp.getCmdType()) { //Func 2.8
                 if (this.listener != null) {
                     executorService.submit(() -> {
-                        ResultCardDetectionEvent cardDetectionEvent = getCardDetectionEvent(json);
+                        CardDetectionEventResp cardDetectionEvent = getCardDetectionEvent(json);
                         listener.onReceivedCardDetecionEvent(cardDetectionEvent);
                     });
                 }
@@ -340,21 +340,21 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="GET DEVICE DETAILS">
-    private DeviceDetails getDeviceDetails(String json) {
-        Type type = new TypeToken<ISMessage<DeviceDetails>>() {
+    private DeviceDetailsResp getDeviceDetails(String json) {
+        Type type = new TypeToken<ISMessage<DeviceDetailsResp>>() {
         }.getType();
-        ISMessage<DeviceDetails> device = Utils.GSON.fromJson(json, type);
-        DeviceDetails devcDetails = device.getData();
+        ISMessage<DeviceDetailsResp> device = Utils.GSON.fromJson(json, type);
+        DeviceDetailsResp devcDetails = device.getData();
         return devcDetails;
     }
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="GET DOCUMENT DETAILS">
-    private DocumentDetails getDocumentDetails(String json) {
-        Type type = new TypeToken<ISMessage<DocumentDetails>>() {
+    private DocumentDetailsResp getDocumentDetails(String json) {
+        Type type = new TypeToken<ISMessage<DocumentDetailsResp>>() {
         }.getType();
-        ISMessage<DocumentDetails> doc = Utils.GSON.fromJson(json, type);
-        DocumentDetails docDetails = doc.getData();
+        ISMessage<DocumentDetailsResp> doc = Utils.GSON.fromJson(json, type);
+        DocumentDetailsResp docDetails = doc.getData();
 //        if (docDetails != null && docDetails.getDataGroup() != null && docDetails.getDataGroup().getDg1() != null) {
 //            byte[] dg1 = docDetails.getDataGroup().getDg1();
 //            docDetails.setMrz(new String(dg1, 5, dg1.length - 5, CharsetUtil.UTF_8));
@@ -364,11 +364,11 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="GET BIOMETRIC AUTH">
-    private ResultBiometricAuth getResultBiometricAuth(String json) {
-        Type type = new TypeToken<ISMessage<ResultBiometricAuth>>() {
+    private BiometricAuthResp getResultBiometricAuth(String json) {
+        Type type = new TypeToken<ISMessage<BiometricAuthResp>>() {
         }.getType();
-        ISMessage<ResultBiometricAuth> biometricAuth = Utils.GSON.fromJson(json, type);
-        ResultBiometricAuth resultBiometricAuth = biometricAuth.getData();
+        ISMessage<BiometricAuthResp> biometricAuth = Utils.GSON.fromJson(json, type);
+        BiometricAuthResp resultBiometricAuth = biometricAuth.getData();
 //        if (docDetails != null && docDetails.getDataGroup() != null && docDetails.getDataGroup().getDg1() != null) {
 //            byte[] dg1 = docDetails.getDataGroup().getDg1();
 //            docDetails.setMrz(new String(dg1, 5, dg1.length - 5, CharsetUtil.UTF_8));
@@ -377,32 +377,32 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
     }
     //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="GET CONEECT DEVICE">
-    private ResultConnectDevice getConnectDevice(String json) {
-        Type type = new TypeToken<ISMessage<ResultConnectDevice>>() {
+    //<editor-fold defaultstate="collapsed" desc="GET CONECT TO DEVICE">
+    private ConnectToDeviceResp getConnectDevice(String json) {
+        Type type = new TypeToken<ISMessage<ConnectToDeviceResp>>() {
         }.getType();
-        ISMessage<ResultConnectDevice> connect = Utils.GSON.fromJson(json, type);
-        ResultConnectDevice resultConnectDevice = connect.getData();
+        ISMessage<ConnectToDeviceResp> connect = Utils.GSON.fromJson(json, type);
+        ConnectToDeviceResp resultConnectDevice = connect.getData();
         return resultConnectDevice;
     }
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="GET CARD DETECTION">
-    private ResultCardDetectionEvent getCardDetectionEvent(String json) {
-        Type type = new TypeToken<ISMessage<ResultCardDetectionEvent>>() {
+    private CardDetectionEventResp getCardDetectionEvent(String json) {
+        Type type = new TypeToken<ISMessage<CardDetectionEventResp>>() {
         }.getType();
-        ISMessage<ResultCardDetectionEvent> cardEvent = Utils.GSON.fromJson(json, type);
-        ResultCardDetectionEvent cardDetectionEvent = cardEvent.getData();
+        ISMessage<CardDetectionEventResp> cardEvent = Utils.GSON.fromJson(json, type);
+        CardDetectionEventResp cardDetectionEvent = cardEvent.getData();
         return cardDetectionEvent;
     }
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="GET SCAN DOCUMENT">
-    private ResultScanDocument getScanDocument(String json) {
-        Type type = new TypeToken<ISMessage<ResultScanDocument>>() {
+    private ScanDocumentResp getScanDocument(String json) {
+        Type type = new TypeToken<ISMessage<ScanDocumentResp>>() {
         }.getType();
-        ISMessage<ResultScanDocument> scanDoc = Utils.GSON.fromJson(json, type);
-        ResultScanDocument scanDocument = scanDoc.getData();
+        ISMessage<ScanDocumentResp> scanDoc = Utils.GSON.fromJson(json, type);
+        ScanDocumentResp scanDocument = scanDoc.getData();
         return scanDocument;
     }
     //</editor-fold>

@@ -10,11 +10,12 @@ import lombok.Getter;
 
 /**
  *
- * @author acer
+ * @author TRUONGNNT
  */
-
-@Builder
 @Getter
-public class ResultCardDetectionEvent {
-    private boolean cardDetected;
+@Builder
+public class ConnectToDeviceResp {
+    private String deviceName;
+    private String deviceSN;
+    private String deviceIP;
 }

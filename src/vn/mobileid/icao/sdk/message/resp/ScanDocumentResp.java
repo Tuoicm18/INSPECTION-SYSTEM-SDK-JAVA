@@ -7,15 +7,15 @@ package vn.mobileid.icao.sdk.message.resp;
 
 import lombok.Builder;
 import lombok.Getter;
+import vn.mobileid.icao.sdk.ScanType;
 
 /**
  *
- * @author TRUONGNNT
+ * @author acer
  */
-@Getter
 @Builder
-public class ResultConnectDevice {
-    private String deviceName;
-    private String deviceSN;
-    private String deviceIP;
+@Getter
+public class ScanDocumentResp {
+    private ScanType scanType;
+    private String document;
 }

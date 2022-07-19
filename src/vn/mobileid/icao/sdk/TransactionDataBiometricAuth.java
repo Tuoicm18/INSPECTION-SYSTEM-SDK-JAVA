@@ -14,8 +14,8 @@ import lombok.Getter;
  */
 @Builder
 @Getter
-public class TransactionData {
-    private String authorizationTitle;
+public class TransactionDataBiometricAuth {
+    private String transactionTitle;
     private AuthorizationElement[] authContentList;
     private AuthorizationElement[] multipleSelectList;
     private AuthorizationElement[] singleSelectList;

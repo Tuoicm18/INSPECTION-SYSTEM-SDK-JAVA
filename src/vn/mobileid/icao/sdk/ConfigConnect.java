@@ -3,10 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package vn.mobileid.icao.sdk.message.resp;
+package vn.mobileid.icao.sdk;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  *
@@ -14,13 +15,11 @@ import lombok.Getter;
  */
 @Builder
 @Getter
-public class DeviceDetails {
-
-    private String deviceName;
-    private String deviceSN;
-
-    private String lastScanTime;
-    private int totalPreceeded;
-    private boolean activePresenceDetection;
-
+@Setter
+public class ConfigConnect {
+    private boolean automaticEnabled;
+    private boolean mrzEnabled;
+    private boolean imageEnabled;
+    private boolean dataGroupEnabled;
+    private boolean optionalDetailsEnabled;
 }

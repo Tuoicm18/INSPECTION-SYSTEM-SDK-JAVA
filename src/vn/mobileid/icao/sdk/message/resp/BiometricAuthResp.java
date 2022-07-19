@@ -6,7 +6,7 @@
 package vn.mobileid.icao.sdk.message.resp;
 
 import lombok.Getter;
-import vn.mobileid.icao.sdk.Challenge;
+import vn.mobileid.icao.sdk.ChallengeBiometricAuth;
 import vn.mobileid.icao.sdk.BiometricType;
 
 /**
@@ -14,7 +14,7 @@ import vn.mobileid.icao.sdk.BiometricType;
  * @author TRUONGNNT
  */
 @Getter
-public class ResultBiometricAuth {
+public class BiometricAuthResp{
 
     private BiometricType biometricType;
     private boolean result;
@@ -22,5 +22,5 @@ public class ResultBiometricAuth {
     private String jwt;
     private int issueDetailCode;
     private String issueDetailMessage;
-    private Challenge challenge;
+    private ChallengeBiometricAuth challenge;
 }

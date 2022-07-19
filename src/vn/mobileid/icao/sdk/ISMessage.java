@@ -20,7 +20,8 @@ public class ISMessage<T> {
 
     private CmdType cmdType;
     private String requestID;
-
+    private int timeOutInterval;
+    
     @Builder.Default
     private T data = null;
 

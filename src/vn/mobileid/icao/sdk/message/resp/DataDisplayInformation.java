@@ -3,18 +3,18 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package vn.mobileid.icao.sdk;
+package vn.mobileid.icao.sdk.message.resp;
 
-import lombok.Builder;
 import lombok.Getter;
-
+import lombok.Setter;
 /**
  *
- * @author TRUONGNNT
+ * @author acer
  */
-@Builder
 @Getter
-public class Challenge {
-    private String challengeValue;
-    private TransactionData transactionData;
+@Setter
+public class DataDisplayInformation {
+    private String title;
+    private String type;
+    private String value;
 }

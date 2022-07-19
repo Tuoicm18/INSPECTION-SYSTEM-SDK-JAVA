@@ -3,19 +3,18 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package vn.mobileid.icao.sdk.message.resp;
+package vn.mobileid.icao.sdk;
 
 import lombok.Builder;
 import lombok.Getter;
-import vn.mobileid.icao.sdk.ScanType;
 
 /**
  *
- * @author acer
+ * @author TRUONGNNT
  */
 @Builder
 @Getter
-public class ResultScanDocument {
-    private ScanType scanType;
-    private String document;
+public class ChallengeBiometricAuth {
+    private String challengeValue;
+    private TransactionDataBiometricAuth transactionData; //TransactionData
 }
