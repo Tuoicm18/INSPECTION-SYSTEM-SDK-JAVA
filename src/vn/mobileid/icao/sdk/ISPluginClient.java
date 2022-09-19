@@ -45,6 +45,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.mobileid.icao.sdk.message.resp.CardDetectionEventResp;
@@ -106,6 +107,7 @@ public final class ISPluginClient {
     private ISListener listener;
 
     private boolean monitor = true;
+    private AtomicBoolean connectDenied = new AtomicBoolean();
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="INTERFACE">
@@ -131,6 +133,8 @@ public final class ISPluginClient {
     }
 
     public interface DisplayInformationListener extends DetailsListener {
+
+        void onDisplayInformation(DisplayInformationResp resultDisplayInformation);
 
         void onSuccess();
     }
@@ -160,6 +164,8 @@ public final class ISPluginClient {
         void onAccepted(ConnectToDeviceResp device);
 
         void onDisconnected();
+        
+        void onConnectDeined();
 
         void doSend(CmdType cmd, String id, ISMessage data);
 
@@ -196,37 +202,6 @@ public final class ISPluginClient {
                 this.sslCtx = null;
             }
             this.listener = listener;
-
-            //connect();         
-//            this.fSendPing = this.pingExe.scheduleWithFixedDelay(() -> {
-//                if (shutdown.get()) {
-//                    LOGGER.debug("Client was shutdown");
-//                    return;
-//                }
-//                if (handler == null || !handler.isOpen()) {
-//                    try {
-//                        LOGGER.debug("Channel is closed, re-connect ...");
-//                        connect(connectDevice);
-//                    } catch (ISPluginException ex) {
-//                        LOGGER.error("Error when re-connect, caused by", ex);
-//                    }
-//                } else if (handler.needSendPing(PING) && monitor) {
-//                    try {
-//                        if (sendPing() > MAX_PING) {
-//                            LOGGER.debug("Ping count reachs max, close this connection");
-//                            close();
-//                            try {
-//                                LOGGER.debug("Re-connect ...");
-//                                connect(connectDevice);
-//                            } catch (ISPluginException ex) {
-//                                LOGGER.error("Error when re-connect, caused by", ex);
-//                            }
-//                        }
-//                    } catch (ISPluginException ex) {
-//                        LOGGER.error("Error when send ping ", ex);
-//                    }
-//                }
-//            }, 0, PING, TimeUnit.SECONDS);
         } catch (ISPluginException ex) {
             //wsGroup.shutdownGracefully();
             throw ex;
@@ -244,12 +219,13 @@ public final class ISPluginClient {
         this.listener = listener;
     }
 
-    public synchronized ConnectToDeviceResp connect(RequireConnectDevice connectDevice, long timeoutMilli) throws ISPluginException {
+    // long timeoutMilli
+    public synchronized ConnectToDeviceResp connect(RequireConnectDevice connectDevice) throws ISPluginException {
         if (isConnect.get()) {
             throw new ISPluginException("Client is connecting ...");
         }
         //CountDownLatch wait = new CountDownLatch(1);
-        connectToPlugin(connectDevice, timeoutMilli);
+        connectToPlugin(connectDevice); //timeoutMilli
 
         if (monitor) {
             this.fSendPing = this.pingExe.scheduleWithFixedDelay(() -> {
@@ -260,7 +236,7 @@ public final class ISPluginClient {
                 if (handler == null || !handler.isOpen()) {
                     try {
                         LOGGER.debug("Channel is closed, re-connect ...");
-                        connectToPlugin(connectDevice, timeoutMilli);
+                        connectToPlugin(connectDevice); //timeoutMilli
                     } catch (ISPluginException ex) {
                         LOGGER.error("Error when re-connect, caused by", ex);
                     }
@@ -271,7 +247,7 @@ public final class ISPluginClient {
                             close();
                             try {
                                 LOGGER.debug("Re-connect ...");
-                                connectToPlugin(connectDevice, timeoutMilli);
+                                connectToPlugin(connectDevice); // 
                             } catch (ISPluginException ex) {
                                 LOGGER.error("Error when re-connect, caused by", ex);
                             }
@@ -295,7 +271,67 @@ public final class ISPluginClient {
         return this.deviceConnected;
     }
 
-    private void connectToPlugin(RequireConnectDevice connectDevice, long timeout) throws ISPluginException {
+    public synchronized void connect() throws ISPluginException {
+        if (isConnect.get()) {
+            throw new ISPluginException("Client is connecting ...");
+        }
+        //CountDownLatch wait = new CountDownLatch(1);
+        connectToPlugin(null);
+
+        if (monitor) {
+            this.fSendPing = this.pingExe.scheduleWithFixedDelay(() -> {
+                if (shutdown.get()) {
+                    LOGGER.debug("Client was shutdown");
+                    return;
+                }
+                if (connectDenied.get()) {
+                    LOGGER.debug("Connection Denied");
+                    try {
+                        shutdown();
+                    } catch (ISPluginException ex) {
+                        LOGGER.error(ex.toString());
+                    }
+                    return;
+                }
+                if (handler == null || !handler.isOpen()) {
+                    try {
+                        LOGGER.debug("Channel is closed, re-connect ...");
+                        connectToPlugin(null);
+                    } catch (ISPluginException ex) {
+                        LOGGER.error("Error when re-connect, caused by", ex);
+                    }
+                } else if (handler.needSendPing(PING) && monitor) {
+                    try {
+                        if (sendPing() > MAX_PING) {
+                            LOGGER.debug("Ping count reachs max, close this connection");
+                            close();
+                            try {
+                                LOGGER.debug("Re-connect ...");
+                                connectToPlugin(null);
+                            } catch (ISPluginException ex) {
+                                LOGGER.error("Error when re-connect, caused by", ex);
+                            }
+                        }
+                    } catch (ISPluginException ex) {
+                        LOGGER.error("Error when send ping ", ex);
+                    }
+                }
+            }, 0, PING, TimeUnit.SECONDS);
+        }
+        isConnect.set(true);
+
+//        if (connectDevice == null) {
+//            return null;
+//        }
+//        try {
+//            wait.await(timeoutMilli, TimeUnit.MILLISECONDS);
+//        } catch (Exception ex) {
+//            throw new ISPluginException(ex);
+//        }
+        //return this.deviceConnected;
+    }
+
+    private void connectToPlugin(RequireConnectDevice connectDevice) throws ISPluginException { //long timeout
         if (listener != null) {
             listener.onPreConnect();
         }
@@ -317,7 +353,7 @@ public final class ISPluginClient {
         try {
             handler = new WebSocketClientHandler(
                     WebSocketClientHandshakerFactory.newHandshaker(this.uri, WebSocketVersion.V13,
-                            null, true, new DefaultHttpHeaders()), pingCount, listener);
+                            null, true, new DefaultHttpHeaders()), pingCount, listener, connectDenied);
             // Connect with V13 (RFC 6455 aka HyBi-17). You can change it to V08 or V00.
             // If you change it to V00, ping is not supported and remember to change
             // HttpResponseDecoder to WebSocketHttpResponseDecoder in the pipeline.
@@ -432,21 +468,20 @@ public final class ISPluginClient {
     //</editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="GET DEVICE DETAILS">
-    public DeviceDetailsResp getDeviceDetails(boolean deviceDetailsEnabled, boolean presenceEnabled,
-                                              long timeoutMilliSec, int timeOutInterval) throws ISPluginException {
-        return getDeviceDetailsAsync(deviceDetailsEnabled, presenceEnabled,timeOutInterval, null)
-                .waitResponse(timeoutMilliSec, TimeUnit.MILLISECONDS);
+    public DeviceDetailsResp getDeviceDetails(boolean deviceDetailsEnabled, boolean presenceEnabled, int timeoutInterval) throws ISPluginException {
+        return getDeviceDetailsAsync(deviceDetailsEnabled, presenceEnabled, timeoutInterval, null)
+                .waitResponse(timeoutInterval);
     }
 
     public ResponseSync<DeviceDetailsResp> getDeviceDetailsAsync(boolean deviceDetailsEnabled, boolean presenceEnabled,
-                                                                 int timeOutInterval, DeviceDetailsListener deviceDetailsListener) throws ISPluginException {
+            int timeoutInterval, DeviceDetailsListener deviceDetailsListener) throws ISPluginException {
         check();
         CmdType cmdType = CmdType.GetDeviceDetails;
         String reqID = Utils.getUUID();
         ISRequest req = (ISRequest) ISRequest.builder()
                 .cmdType(cmdType)
                 .requestID(reqID)
-                .timeOutInterval(timeOutInterval)
+                .timeoutInterval(timeoutInterval)
                 .data(RequireDeviceDetails.builder()
                         .deviceDetailsEnabled(deviceDetailsEnabled)
                         .presenceEnabled(presenceEnabled)
@@ -470,22 +505,23 @@ public final class ISPluginClient {
 
     // <editor-fold defaultstate="collapsed" desc="GET DOCUMENT DETAILS">
     public DocumentDetailsResp getDocumentDetails(boolean mrzEnabled, boolean imageEnabled,
-                                                  boolean dataGroupEnabled, boolean optionalDetailsEnabled,
-                                                  String canValue, String challenge,
-                                                  boolean caEnabled, boolean taEnabled,
-                                                  long timeoutMilliSec, int timeOutInterval) throws ISPluginException {
+            boolean dataGroupEnabled, boolean optionalDetailsEnabled,
+            String canValue, String challenge,
+            boolean caEnabled, boolean taEnabled,
+            boolean paEnabled,int timeoutInterval) throws ISPluginException {
         return getDocumentDetailsAsync(mrzEnabled, imageEnabled,
-                                       dataGroupEnabled, optionalDetailsEnabled,
-                                       canValue, challenge,
-                                       caEnabled, taEnabled,
-                                       timeOutInterval, null).waitResponse(timeoutMilliSec, TimeUnit.MILLISECONDS);
+                dataGroupEnabled, optionalDetailsEnabled,
+                canValue, challenge,
+                caEnabled, taEnabled,
+                paEnabled,timeoutInterval,
+                null).waitResponse(timeoutInterval);
     }
 
     public ResponseSync<DocumentDetailsResp> getDocumentDetailsAsync(boolean mrzEnabled, boolean imageEnabled,
-                                                                     boolean dataGroupEnabled, boolean optionalDetailsEnabled,
-                                                                     String canValue, String challenge,
-                                                                     boolean caEnabled, boolean taEnabled,
-                                                                     int timeOutInterval, DocumentDetailsListener documentDetailsListener) throws ISPluginException {
+            boolean dataGroupEnabled, boolean optionalDetailsEnabled,
+            String canValue, String challenge,
+            boolean caEnabled, boolean taEnabled,
+            boolean paEnabled,int timeoutInterval, DocumentDetailsListener documentDetailsListener) throws ISPluginException {
         check();
         CmdType cmdType = CmdType.GetInfoDetails;
         String reqID = Utils.getUUID();
@@ -501,8 +537,9 @@ public final class ISPluginClient {
                         .challenge(challenge)
                         .caEnabled(caEnabled)
                         .taEnabled(taEnabled)
+                        .paEnabled(paEnabled)
                         .build())
-                .timeOutInterval(timeOutInterval)
+                .timeoutInterval(timeoutInterval)
                 .build();
 
         LOGGER.debug(">>> SEND: [" + Utils.GSON.toJson(req) + "]");
@@ -522,16 +559,16 @@ public final class ISPluginClient {
 
     // <editor-fold defaultstate="collapsed" desc="GET BIOMETRIC AUTH">
     public BiometricAuthResp biometricAuthentication(BiometricType biometricType, Object challengeBiometric,
-                                                     ChallengeType challengeType, boolean livenessEnabled,String cardNo, 
-                                                     long timeoutMilliSec, int timeOutInterval) throws ISPluginException {
+            ChallengeType challengeType, boolean livenessEnabled, String cardNo,
+            int timeoutInterval) throws ISPluginException {
         return biometricAuthenticationAsync(biometricType, challengeBiometric,
-                                            challengeType, livenessEnabled,
-                                            cardNo, timeOutInterval, null).waitResponse(timeoutMilliSec, TimeUnit.MILLISECONDS);
+                challengeType, livenessEnabled,
+                cardNo, timeoutInterval, null).waitResponse(timeoutInterval);
     }
 
     public ResponseSync<BiometricAuthResp> biometricAuthenticationAsync(BiometricType biometricType, Object challengeBiometric,
-                                                                        ChallengeType challengeType, boolean livenessEnabled, String cardNo,                                                                       
-                                                                        int timeOutInterval, BiometricAuthListener biometricAuthListener) throws ISPluginException {
+            ChallengeType challengeType, boolean livenessEnabled, String cardNo,
+            int timeoutInterval, BiometricAuthListener biometricAuthListener) throws ISPluginException {
         check();
         CmdType cmdType = CmdType.BiometricAuthentication;
         String reqID = Utils.getUUID();
@@ -545,7 +582,7 @@ public final class ISPluginClient {
                         .challengeType(challengeType)
                         .challenge(challengeBiometric)
                         .build())
-                .timeOutInterval(timeOutInterval)
+                .timeoutInterval(timeoutInterval)
                 .build();
 
         LOGGER.debug(">>> SEND: [" + Utils.GSON.toJson(req) + "]");
@@ -562,30 +599,29 @@ public final class ISPluginClient {
         return responseSync;
     }
     // </editor-fold>
-    
+
     //<editor-fold defaultstate="collapsed" desc="GET CONNECT TO DEVICE">
     public ConnectToDeviceResp connectToDevice(boolean confirmEnabled, String confirmCode,
-                                               String clientName, ConfigConnect configConnect,
-                                               long timeoutMilliSec,int timeOutInterval) throws ISPluginException {
-        return connectToDeviceAsync(confirmEnabled, confirmCode, clientName, configConnect, timeOutInterval, null).waitResponse(timeoutMilliSec, TimeUnit.MILLISECONDS);
+            String clientName, ConfigConnect configConnect, int timeoutInterval) throws ISPluginException {
+        return connectToDeviceAsync(confirmEnabled, confirmCode, clientName, configConnect, timeoutInterval, null).waitResponse(timeoutInterval);
     }
 
     public ResponseSync<ConnectToDeviceResp> connectToDeviceAsync(boolean confirmEnabled, String confirmCode,
-                                                                  String clientName, ConfigConnect configConnect,
-                                                                  int timeOutInterval, ConnectToDeviceListener connectToDeviceListener) throws ISPluginException {
+            String clientName, ConfigConnect configConnect,
+            int timeoutInterval, ConnectToDeviceListener connectToDeviceListener) throws ISPluginException {
         check();
         CmdType cmdType = CmdType.ConnectToDevice;
         String reqID = Utils.getUUID();
         ISRequest<RequireConnectDevice> req = ISRequest.<RequireConnectDevice>builder()
                 .cmdType(cmdType)
                 .requestID(reqID)
-                .timeOutInterval(timeOutInterval)
+                .timeoutInterval(timeoutInterval)
                 .data(RequireConnectDevice.builder()
-                    .confirmEnabled(confirmEnabled)
-                    .confirmCode(confirmCode)
-                    .clientName(clientName)
-                    .configuration(configConnect)
-                    .build())
+                        .confirmEnabled(confirmEnabled)
+                        .confirmCode(confirmCode)
+                        .clientName(clientName)
+                        .configuration(configConnect)
+                        .build())
                 .build();
 
         LOGGER.debug(">>> SEND: [" + Utils.GSON.toJson(req) + "]");
@@ -604,27 +640,26 @@ public final class ISPluginClient {
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="GET DISPLAY INFORMATION">
-    public DisplayInformationResp displayInformation(String title, DisplayType type, 
-                                                     String value, int timeOutInterval,
-                                                     long timeoutMilliSec) throws ISPluginException {
-        return displayInformationAsync(title, type, value, timeOutInterval, null).waitResponse(timeoutMilliSec, TimeUnit.MILLISECONDS);
+    public DisplayInformationResp displayInformation(String title, DisplayType type,
+            String value, int timeoutInterval) throws ISPluginException {
+        return displayInformationAsync(title, type, value, timeoutInterval, null).waitResponse(timeoutInterval);
     }
 
     public ResponseSync<DisplayInformationResp> displayInformationAsync(String title, DisplayType type,
-                                                                        String value, int timeOutInterVal,
-                                                                        DisplayInformationListener displayInformationListener) throws ISPluginException {
+            String value, int timeoutInterval,
+            DisplayInformationListener displayInformationListener) throws ISPluginException {
         check();
         CmdType cmdType = CmdType.DisplayInformation;
         String reqID = Utils.getUUID();
-        ISRequest<DisplayInformation> req = ISRequest.<DisplayInformation>builder()
+        ISRequest<RequireDisplayInformation> req = ISRequest.<RequireDisplayInformation>builder()
                 .cmdType(cmdType)
                 .requestID(reqID)
-                .data(DisplayInformation.builder()
+                .data(RequireDisplayInformation.builder()
                         .title(title)
                         .type(type)
                         .value(value)
                         .build())
-                .timeOutInterval(timeOutInterVal)
+                .timeoutInterval(timeoutInterval)
                 .build();
 
         LOGGER.debug(">>> SEND: [" + Utils.GSON.toJson(req) + "]");
@@ -643,14 +678,13 @@ public final class ISPluginClient {
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="REFRESH READER">
-    public DeviceDetailsResp refreshReader(boolean deviceDetailsEnabled, boolean presenceEnabled,
-                                           long timeoutMilliSec, int timeOutInterval) throws ISPluginException {
-        return refreshReaderAsync(deviceDetailsEnabled, presenceEnabled, timeOutInterval,null)
-                .waitResponse(timeoutMilliSec, TimeUnit.MILLISECONDS);
+    public DeviceDetailsResp refreshReader(boolean deviceDetailsEnabled, boolean presenceEnabled, int timeoutInterval) throws ISPluginException {
+        return refreshReaderAsync(deviceDetailsEnabled, presenceEnabled, timeoutInterval, null)
+                .waitResponse(timeoutInterval);
     }
 
     public ResponseSync<DeviceDetailsResp> refreshReaderAsync(boolean deviceDetailsEnabled, boolean presenceEnabled,
-                                                              int timeOutInterval, DeviceDetailsListener deviceDetailsListener) throws ISPluginException {
+            int timeoutInterval, DeviceDetailsListener deviceDetailsListener) throws ISPluginException {
         check();
         CmdType cmdType = CmdType.Refresh;
         String reqID = Utils.getUUID();
@@ -661,7 +695,7 @@ public final class ISPluginClient {
                         .deviceDetailsEnabled(deviceDetailsEnabled)
                         .presenceEnabled(presenceEnabled)
                         .build())
-                .timeOutInterval(timeOutInterval)
+                .timeoutInterval(timeoutInterval)
                 .build();
 
         LOGGER.debug(">>> SEND: [" + Utils.GSON.toJson(req) + "]");
@@ -680,24 +714,23 @@ public final class ISPluginClient {
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="GET SCAN DOCUMENT">
-    public ScanDocumentResp scanDocument(ScanType scanType, boolean saveEnabled,
-                                         long timeoutMilliSec, int timeOutInterval) throws ISPluginException {
-        return scanDocumentSync(scanType, saveEnabled, timeOutInterval, null).waitResponse(timeoutMilliSec, TimeUnit.MILLISECONDS);
+    public ScanDocumentResp scanDocument(ScanType scanType, boolean saveEnabled, int timeoutInterval) throws ISPluginException {
+        return scanDocumentSync(scanType, saveEnabled, timeoutInterval, null).waitResponse(timeoutInterval);
     }
 
     public ResponseSync<ScanDocumentResp> scanDocumentSync(ScanType scanType, boolean saveEnabled,
-                                                           int timeOutInterval,ScanDocumentListener scanDocumentListener) throws ISPluginException {
+            int timeoutInterval, ScanDocumentListener scanDocumentListener) throws ISPluginException {
         check();
         CmdType cmdType = CmdType.ScanDocument;
         String reqID = Utils.getUUID();
         ISRequest<RequireScanDocument> req = ISRequest.<RequireScanDocument>builder()
                 .cmdType(cmdType)
                 .requestID(reqID)
-                .timeOutInterval(timeOutInterval)
+                .timeoutInterval(timeoutInterval)
                 .data(RequireScanDocument.builder()
-                    .scanType(scanType)
-                    .saveEnabled(saveEnabled)
-                    .build())
+                        .scanType(scanType)
+                        .saveEnabled(saveEnabled)
+                        .build())
                 .build();
 
         LOGGER.debug(">>> SEND: [" + Utils.GSON.toJson(req) + "]");

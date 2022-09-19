@@ -16,8 +16,8 @@ import lombok.Getter;
 @Builder
 public class DataGroup {
 
-    private byte[] dg1;
-    private byte[] dg2;
-    private byte[] dg3;
-    private byte[] dg13;
+    private String dg1;
+    private String dg2;
+    private String dg3;
+    private String dg13;
 }

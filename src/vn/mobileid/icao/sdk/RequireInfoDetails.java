@@ -24,4 +24,5 @@ class RequireInfoDetails {
     private String challenge;
     private boolean caEnabled;
     private boolean taEnabled;
+    private boolean paEnabled;
 }

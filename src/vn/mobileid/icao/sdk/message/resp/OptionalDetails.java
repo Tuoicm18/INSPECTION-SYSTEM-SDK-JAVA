@@ -31,7 +31,9 @@ public class OptionalDetails {
     private String expiryDate;
 
     private String idDocument;
-    private String fullNameOfFather;
-    private String fullNameOfMother;
+        //Upadate 2022.09.19 Replace fullNameOfFather & fullNameOfMother with fullNameOfParents
+    private String fullNameOfParents;
+    //private String fullNameOfFather;
+    //private String fullNameOfMother;
     private String fullNameOfSpouse;
 }

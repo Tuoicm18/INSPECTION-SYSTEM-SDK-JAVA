@@ -14,7 +14,7 @@ import lombok.Getter;
  */
 @Getter
 @Builder
-public class DisplayInformation {
+public class RequireDisplayInformation {
     private String title;
     private DisplayType type;
     private String value;

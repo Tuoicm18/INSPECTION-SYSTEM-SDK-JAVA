@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ import vn.mobileid.icao.sdk.message.resp.DeviceDetailsResp;
 import vn.mobileid.icao.sdk.message.resp.DocumentDetailsResp;
 import vn.mobileid.icao.sdk.message.resp.BiometricAuthResp;
 import vn.mobileid.icao.sdk.message.resp.ConnectToDeviceResp;
+import vn.mobileid.icao.sdk.message.resp.DisplayInformationResp;
 import vn.mobileid.icao.sdk.message.resp.ScanDocumentResp;
 
 /**
@@ -58,16 +60,19 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
     private StringBuffer response;
     private final ISPluginClient.ISListener listener;
     private final ExecutorService executorService;
+    private final AtomicBoolean connectionDenied;
 
     final Map<String, ResponseSync> request = new ConcurrentHashMap<>();
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="CONSTRUCTOR">
-    public WebSocketClientHandler(WebSocketClientHandshaker handshaker, AtomicInteger pingCount, ISPluginClient.ISListener listener) {
+    public WebSocketClientHandler(WebSocketClientHandshaker handshaker, AtomicInteger pingCount,
+            ISPluginClient.ISListener listener, AtomicBoolean connectionDeniedInput) {
         this.handshaker = handshaker;
         this.pingCount = pingCount;
         this.listener = listener;
         this.executorService = Executors.newFixedThreadPool(2);
+        this.connectionDenied = connectionDeniedInput;
     }
     //</editor-fold>
 
@@ -196,12 +201,13 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                     this.listener.onReceive(resp.getCmdType(), reqID, resp.getErrorCode(), resp);
                 });
             }
-            if (request.containsKey(reqID)) {
+            if (reqID != null && request.containsKey(reqID)) {
                 ResponseSync sync = request.get(reqID);
                 try {
                     if (resp.getCmdType() == null || resp.getCmdType() != sync.getCmdType()) {
                         throw new ISPluginException("CmdType not match expect [" + sync.getCmdType() + "] but get [" + resp.getCmdType() + "]");
                     }
+
                     if (resp.getErrorCode() != Utils.SUCCESS) {
                         throw new ISPluginException(resp.getErrorCode(), resp.getErrorMessage());
                     }
@@ -241,7 +247,7 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                         case ConnectToDevice: // Func 2.5
                             ConnectToDeviceResp resultConnectDevice = getConnectDevice(json);
                             sync.setSuccess(resultConnectDevice);
-                            if (sync.getConnectToDeviceListener()!= null) {
+                            if (sync.getConnectToDeviceListener() != null) {
                                 executorService.submit(() -> {
                                     sync.getConnectToDeviceListener()
                                             .onConnectToDevice(resultConnectDevice);
@@ -249,11 +255,13 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                             }
                             break;
                         case DisplayInformation: // Func 2.6
+                            DisplayInformationResp displayInfoResp = getDisplayInformation(json);
                             sync.setSuccess(null);
                             if (sync.getDisplayInformationListener() != null) {
                                 executorService.submit(() -> {
                                     sync.getDisplayInformationListener()
                                             .onSuccess();
+                                    sync.getDisplayInformationListener().onDisplayInformation(displayInfoResp);
                                 });
                             }
                             break;
@@ -300,7 +308,7 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                                     .onError(ex);
                         });
                     }
-                    if (sync.getScanDocumentListener()!= null) {
+                    if (sync.getScanDocumentListener() != null) {
                         executorService.submit(() -> {
                             sync.getScanDocumentListener()
                                     .onError(ex);
@@ -331,6 +339,13 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                     });
                 }
             } else {
+                if (resp.getErrorCode() == Utils.CONNECT_DENIED) {
+                    //LOGGER.debug("ERR CODE " + resp.getErrorCode());
+                    if(this.listener != null) {
+                        listener.onConnectDeined();
+                    }
+                    connectionDenied.set(true);
+                }
                 LOGGER.debug("Not found Request with RequestID [{}], skip Response [{}]", reqID, json);
             }
         } catch (Exception ex) {
@@ -384,6 +399,16 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
         ISMessage<ConnectToDeviceResp> connect = Utils.GSON.fromJson(json, type);
         ConnectToDeviceResp resultConnectDevice = connect.getData();
         return resultConnectDevice;
+    }
+    //</editor-fold>
+
+    //<editor-fold defaultstate="collapsed" desc="GET DISPLAY INFORMATION">
+    private DisplayInformationResp getDisplayInformation(String json) {
+        Type type = new TypeToken<ISMessage<DisplayInformationResp>>() {
+        }.getType();
+        ISMessage<DisplayInformationResp> displayInfoResp = Utils.GSON.fromJson(json, type);
+        DisplayInformationResp resultDisplayInfo = displayInfoResp.getData();
+        return resultDisplayInfo;
     }
     //</editor-fold>
 

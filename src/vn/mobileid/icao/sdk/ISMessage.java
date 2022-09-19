@@ -17,10 +17,9 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder(builderMethodName = "baseBuilder")
 public class ISMessage<T> {
-
     private CmdType cmdType;
     private String requestID;
-    private int timeOutInterval;
+    private int timeoutInterval;
     
     @Builder.Default
     private T data = null;

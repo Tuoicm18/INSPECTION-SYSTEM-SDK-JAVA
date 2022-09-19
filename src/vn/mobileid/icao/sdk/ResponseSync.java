@@ -35,10 +35,10 @@ public class ResponseSync<T> {
     private ISPluginClient.ScanDocumentListener scanDocumentListener;
     //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="CONSTRUCTOR">
-    public T waitResponse(long timeout, TimeUnit timeUnit) throws ISPluginException {
+    //<editor-fold defaultstate="collapsed" desc="WAIT RESPONSE">
+    public T waitResponse(int timeout) throws ISPluginException {
         try {
-            if (!wait.await(timeout, timeUnit)) {
+            if (!wait.await(timeout, TimeUnit.MILLISECONDS)) {
                 throw new ISPluginException("Timeout to receive response");
             }
             if (error != null) {

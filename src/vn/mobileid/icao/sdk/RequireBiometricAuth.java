@@ -12,10 +12,9 @@ import lombok.Getter;
  *
  * @author TRUONGNNT
  */
-@Builder
+@Builder 
 @Getter
 public class RequireBiometricAuth {
-
     private BiometricType biometricType;
     private String cardNo;
     private boolean livenessEnabled;

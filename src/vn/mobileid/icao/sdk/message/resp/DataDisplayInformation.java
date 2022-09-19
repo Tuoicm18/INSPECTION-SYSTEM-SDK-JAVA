@@ -7,6 +7,7 @@ package vn.mobileid.icao.sdk.message.resp;
 
 import lombok.Getter;
 import lombok.Setter;
+import vn.mobileid.icao.sdk.DisplayType;
 /**
  *
  * @author acer
@@ -15,6 +16,6 @@ import lombok.Setter;
 @Setter
 public class DataDisplayInformation {
     private String title;
-    private String type;
+    private DisplayType type;
     private String value;
 }

@@ -49,6 +49,7 @@ class Utils {
     private static final Logger LOGGER = LoggerFactory.getLogger(Utils.class);
 
     public static final int SUCCESS = 0;
+    public static final int CONNECT_DENIED = 1008;
     public static final int READ_TIMEOUT = 60;
 
     public static final Gson GSON = new GsonBuilder()
