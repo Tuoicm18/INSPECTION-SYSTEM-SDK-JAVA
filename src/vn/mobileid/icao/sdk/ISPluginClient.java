@@ -559,16 +559,19 @@ public final class ISPluginClient {
 
     // <editor-fold defaultstate="collapsed" desc="GET BIOMETRIC AUTH">
     public BiometricAuthResp biometricAuthentication(BiometricType biometricType, Object challengeBiometric,
-            ChallengeType challengeType, boolean livenessEnabled, String cardNo,
-            int timeoutInterval) throws ISPluginException {
+            ChallengeType challengeType, boolean livenessEnabled,
+            String cardNo,int timeoutInterval,
+            boolean biometricEvidenceEnabled) throws ISPluginException {
         return biometricAuthenticationAsync(biometricType, challengeBiometric,
                 challengeType, livenessEnabled,
-                cardNo, timeoutInterval, null).waitResponse(timeoutInterval);
+                cardNo, timeoutInterval,
+                biometricEvidenceEnabled, null).waitResponse(timeoutInterval);
     }
 
     public ResponseSync<BiometricAuthResp> biometricAuthenticationAsync(BiometricType biometricType, Object challengeBiometric,
-            ChallengeType challengeType, boolean livenessEnabled, String cardNo,
-            int timeoutInterval, BiometricAuthListener biometricAuthListener) throws ISPluginException {
+            ChallengeType challengeType, boolean livenessEnabled, 
+            String cardNo, int timeoutInterval, 
+            boolean biometricEvidenceEnabled, BiometricAuthListener biometricAuthListener) throws ISPluginException {
         check();
         CmdType cmdType = CmdType.BiometricAuthentication;
         String reqID = Utils.getUUID();
@@ -579,6 +582,7 @@ public final class ISPluginClient {
                         .biometricType(biometricType)
                         .cardNo(cardNo)
                         .livenessEnabled(livenessEnabled)
+                        .biometricEvidenceEnabled(biometricEvidenceEnabled)
                         .challengeType(challengeType)
                         .challenge(challengeBiometric)
                         .build())

@@ -18,6 +18,7 @@ public class RequireBiometricAuth {
     private BiometricType biometricType;
     private String cardNo;
     private boolean livenessEnabled;
+    private boolean biometricEvidenceEnabled;
     private ChallengeType challengeType;
     private Object challenge;
 }

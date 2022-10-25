@@ -22,5 +22,6 @@ public class BiometricAuthResp{
     private String jwt;
     private int issueDetailCode;
     private String issueDetailMessage;
+    private String biometricEvidence;
     private ChallengeBiometricAuth challenge;
 }
