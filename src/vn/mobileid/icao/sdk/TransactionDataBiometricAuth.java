@@ -20,4 +20,5 @@ public class TransactionDataBiometricAuth {
     private AuthorizationElement[] multipleSelectList;
     private AuthorizationElement[] singleSelectList;
     private AuthorizationElement[] nameValuePairList;
+    private AuthorizationElement[] documentDigestList;
 }

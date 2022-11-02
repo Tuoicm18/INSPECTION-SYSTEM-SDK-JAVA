@@ -25,5 +25,6 @@ public class AuthorizationElement {
     private Map<String, Boolean> multipleSelect;
     private Map<String, Boolean> singleSelect;   
     private Map<String, String> nameValuePair;
+    private DocumentDigest documentDigest;
     
 }

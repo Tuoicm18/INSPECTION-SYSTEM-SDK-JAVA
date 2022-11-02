@@ -52,6 +52,7 @@ import vn.mobileid.icao.sdk.message.resp.CardDetectionEventResp;
 import vn.mobileid.icao.sdk.message.resp.DeviceDetailsResp;
 import vn.mobileid.icao.sdk.message.resp.DocumentDetailsResp;
 import vn.mobileid.icao.sdk.message.resp.BiometricAuthResp;
+import vn.mobileid.icao.sdk.message.resp.BiometricEvidenceResp;
 import vn.mobileid.icao.sdk.message.resp.DisplayInformationResp;
 import vn.mobileid.icao.sdk.message.resp.ConnectToDeviceResp;
 import vn.mobileid.icao.sdk.message.resp.ScanDocumentResp;
@@ -149,6 +150,11 @@ public final class ISPluginClient {
         void onScanDocument(ScanDocumentResp resultScanDocument);
     }
 
+    public interface BiometricEvidenceListener extends DetailsListener {
+
+        void onBiometricEvidence(BiometricEvidenceResp biometricEvidenceResp);
+    }
+
     public interface ISListener {
 
         boolean onReceivedDocument(DocumentDetailsResp document);
@@ -164,7 +170,7 @@ public final class ISPluginClient {
         void onAccepted(ConnectToDeviceResp device);
 
         void onDisconnected();
-        
+
         void onConnectDeined();
 
         void doSend(CmdType cmd, String id, ISMessage data);
@@ -508,12 +514,12 @@ public final class ISPluginClient {
             boolean dataGroupEnabled, boolean optionalDetailsEnabled,
             String canValue, String challenge,
             boolean caEnabled, boolean taEnabled,
-            boolean paEnabled,int timeoutInterval) throws ISPluginException {
+            boolean paEnabled, int timeoutInterval) throws ISPluginException {
         return getDocumentDetailsAsync(mrzEnabled, imageEnabled,
                 dataGroupEnabled, optionalDetailsEnabled,
                 canValue, challenge,
                 caEnabled, taEnabled,
-                paEnabled,timeoutInterval,
+                paEnabled, timeoutInterval,
                 null).waitResponse(timeoutInterval);
     }
 
@@ -521,7 +527,7 @@ public final class ISPluginClient {
             boolean dataGroupEnabled, boolean optionalDetailsEnabled,
             String canValue, String challenge,
             boolean caEnabled, boolean taEnabled,
-            boolean paEnabled,int timeoutInterval, DocumentDetailsListener documentDetailsListener) throws ISPluginException {
+            boolean paEnabled, int timeoutInterval, DocumentDetailsListener documentDetailsListener) throws ISPluginException {
         check();
         CmdType cmdType = CmdType.GetInfoDetails;
         String reqID = Utils.getUUID();
@@ -560,7 +566,7 @@ public final class ISPluginClient {
     // <editor-fold defaultstate="collapsed" desc="GET BIOMETRIC AUTH">
     public BiometricAuthResp biometricAuthentication(BiometricType biometricType, Object challengeBiometric,
             ChallengeType challengeType, boolean livenessEnabled,
-            String cardNo,int timeoutInterval,
+            String cardNo, int timeoutInterval,
             boolean biometricEvidenceEnabled) throws ISPluginException {
         return biometricAuthenticationAsync(biometricType, challengeBiometric,
                 challengeType, livenessEnabled,
@@ -569,8 +575,8 @@ public final class ISPluginClient {
     }
 
     public ResponseSync<BiometricAuthResp> biometricAuthenticationAsync(BiometricType biometricType, Object challengeBiometric,
-            ChallengeType challengeType, boolean livenessEnabled, 
-            String cardNo, int timeoutInterval, 
+            ChallengeType challengeType, boolean livenessEnabled,
+            String cardNo, int timeoutInterval,
             boolean biometricEvidenceEnabled, BiometricAuthListener biometricAuthListener) throws ISPluginException {
         check();
         CmdType cmdType = CmdType.BiometricAuthentication;
@@ -742,6 +748,40 @@ public final class ISPluginClient {
                 .cmdType(cmdType)
                 .wait(new CountDownLatch(1))
                 .scanDocumentListener(scanDocumentListener)
+                .build();
+        handler.request.put(reqID, responseSync);
+        if (this.listener != null) {
+            this.listener.doSend(cmdType, reqID, req);
+        }
+        this.ch.writeAndFlush(new TextWebSocketFrame(Utils.GSON.toJson(req)));
+        return responseSync;
+    }
+    //</editor-fold>
+
+    //<editor-fold defaultstate="collapsed" desc="GET BIOMETRIC EVIDENCE">
+    public BiometricEvidenceResp biometricEvidence(BiometricType biometricType, int timeoutInterval) throws ISPluginException {
+        return biometricEvidenceSync(biometricType, timeoutInterval, null).waitResponse(timeoutInterval);
+    }
+
+    public ResponseSync<BiometricEvidenceResp> biometricEvidenceSync(BiometricType biometricType, int timeoutInterval,
+            BiometricEvidenceListener biometricEvidenceListener) throws ISPluginException {
+        check();
+        CmdType cmdType = CmdType.BiometricEvidence;
+        String reqID = Utils.getUUID();
+        ISRequest<RequireBiometricEvidence> req = ISRequest.<RequireBiometricEvidence>builder()
+                .cmdType(cmdType)
+                .requestID(reqID)
+                .timeoutInterval(timeoutInterval)
+                .data(RequireBiometricEvidence.builder()
+                        .biometricType(biometricType)
+                        .build())
+                .build();
+
+        LOGGER.debug(">>> SEND: [" + Utils.GSON.toJson(req) + "]");
+        ResponseSync<BiometricEvidenceResp> responseSync = ResponseSync.<BiometricEvidenceResp>builder()
+                .cmdType(cmdType)
+                .wait(new CountDownLatch(1))
+                .biometricEvidenceListener(biometricEvidenceListener)
                 .build();
         handler.request.put(reqID, responseSync);
         if (this.listener != null) {

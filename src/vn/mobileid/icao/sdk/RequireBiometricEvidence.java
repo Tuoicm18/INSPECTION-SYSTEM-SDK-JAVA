@@ -5,14 +5,15 @@
  */
 package vn.mobileid.icao.sdk;
 
+import lombok.Builder;
+import lombok.Getter;
+
 /**
  *
  * @author acer
  */
-public enum AuthElementType {
-    Content,
-    Multiple,
-    Single,
-    NVP,
-    DocDigest
+@Builder
+@Getter
+public class RequireBiometricEvidence {
+    private BiometricType biometricType;
 }

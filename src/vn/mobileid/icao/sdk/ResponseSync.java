@@ -33,6 +33,7 @@ public class ResponseSync<T> {
     private ISPluginClient.DisplayInformationListener displayInformationListener;
     private ISPluginClient.ConnectToDeviceListener connectToDeviceListener;
     private ISPluginClient.ScanDocumentListener scanDocumentListener;
+    private ISPluginClient.BiometricEvidenceListener biometricEvidenceListener;
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="WAIT RESPONSE">

@@ -5,14 +5,18 @@
  */
 package vn.mobileid.icao.sdk;
 
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  *
  * @author acer
  */
-public enum AuthElementType {
-    Content,
-    Multiple,
-    Single,
-    NVP,
-    DocDigest
+@Builder
+@Getter
+@Setter
+public class DocumentDigest {
+    private String digestAlgo;
+    private String digestValue;
 }

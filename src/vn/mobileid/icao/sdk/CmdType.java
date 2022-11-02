@@ -20,4 +20,5 @@ public enum CmdType {
     CardDetectionEvent,
     Refresh,
     ScanDocument, 
+    BiometricEvidence
 }

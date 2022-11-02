@@ -37,6 +37,7 @@ import vn.mobileid.icao.sdk.message.resp.CardDetectionEventResp;
 import vn.mobileid.icao.sdk.message.resp.DeviceDetailsResp;
 import vn.mobileid.icao.sdk.message.resp.DocumentDetailsResp;
 import vn.mobileid.icao.sdk.message.resp.BiometricAuthResp;
+import vn.mobileid.icao.sdk.message.resp.BiometricEvidenceResp;
 import vn.mobileid.icao.sdk.message.resp.ConnectToDeviceResp;
 import vn.mobileid.icao.sdk.message.resp.DisplayInformationResp;
 import vn.mobileid.icao.sdk.message.resp.ScanDocumentResp;
@@ -275,6 +276,16 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                                 });
                             }
                             break;
+                        case BiometricEvidence: //Func 2.11
+                            BiometricEvidenceResp biometricEvidenceResp = getBiometricEvidence(json);
+                            sync.setSuccess(biometricEvidenceResp);
+                            if (sync.getBiometricEvidenceListener() != null) {
+                                executorService.submit(() -> {
+                                    sync.getBiometricEvidenceListener()
+                                            .onBiometricEvidence(biometricEvidenceResp);
+                                });
+                            }
+                            break;
                     }
                 } catch (Exception ex) {
                     sync.setError(ex);
@@ -314,6 +325,12 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
                                     .onError(ex);
                         });
                     }
+                    if (sync.getBiometricEvidenceListener() != null) {
+                        executorService.submit(() -> {
+                            sync.getBiometricEvidenceListener()
+                                    .onError(ex);
+                        });
+                    }
                 } finally {
                     request.remove(reqID);
                 }
@@ -341,7 +358,7 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
             } else {
                 if (resp.getErrorCode() == Utils.CONNECT_DENIED) {
                     //LOGGER.debug("ERR CODE " + resp.getErrorCode());
-                    if(this.listener != null) {
+                    if (this.listener != null) {
                         listener.onConnectDeined();
                     }
                     connectionDenied.set(true);
@@ -429,6 +446,16 @@ class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
         ISMessage<ScanDocumentResp> scanDoc = Utils.GSON.fromJson(json, type);
         ScanDocumentResp scanDocument = scanDoc.getData();
         return scanDocument;
+    }
+    //</editor-fold>
+
+    //<editor-fold defaultstate="collapsed" desc="GET BIOMETRIC EVIDENCE">
+    private BiometricEvidenceResp getBiometricEvidence(String json) {
+        Type type = new TypeToken<ISMessage<BiometricEvidenceResp>>() {
+        }.getType();
+        ISMessage<BiometricEvidenceResp> scanDoc = Utils.GSON.fromJson(json, type);
+        BiometricEvidenceResp biometricEvidenceResp = scanDoc.getData();
+        return biometricEvidenceResp;
     }
     //</editor-fold>
 }
